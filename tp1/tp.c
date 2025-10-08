@@ -1,7 +1,7 @@
 /* GPLv2 (c) Airbus */
 #include <debug.h>
 #include <segmem.h>
-
+#include <string.h>
 void userland() {
    asm volatile ("mov %eax, %cr0");
 }
@@ -79,7 +79,7 @@ void tp() {
     
 
     gdt_reg_t my_gdtr;
-    my_gdtr.addr = (int)my_gdt;
+    my_gdtr.addr = (int)my_gdt; 
     my_gdtr.limit = sizeof(my_gdt) - 1;
     set_gdtr(my_gdtr);
 
@@ -88,6 +88,61 @@ void tp() {
     debug("NEW_GDT addr:  0x%x ", (unsigned int) my_gdtr.addr);
     debug("limit: %d\n", my_gdtr.limit);
     print_gdt_content(my_gdtr);
+
+
+    debug("\n:Q8 Tests:\n");
+
+
+    // CODE 
+
+/*    uint16_t code_selector = gdt_krn_seg_sel(1); 
+    debug("Sélecteur CODE (my_gdt[1]): 0x%x\n", code_selector); //0x8
+ 
+
+    uint16_t data_selector = gdt_krn_seg_sel(2); 
+    debug("Sélecteur DATA (my_gdt[2]): 0x%x\n", data_selector); //0x10
+
+
+    uint16_t original_ds = get_ds();
+
+    debug("DS original: 0x%x\n", original_ds);
+
+
+    debug("set_ds(0x%x)...\n", code_selector);
+    set_ds(code_selector);*/
+    
+
+    char  src[64];
+    char *dst = 0;
+    memset(src, 0xff, 64);
+
+    my_gdt[3].limit_1 = 0x20;   //:16;     /* bits 00-15 of the segment limit */
+    my_gdt[3].base_1 = 0x0000;    //:16;     /* bits 00-15 of the base address */
+    my_gdt[3].base_2 = 0x60;      //:8;      /* bits 16-23 of the base address */
+    my_gdt[3].type = 3; //data,RW //:4;      /* segment type */
+    my_gdt[3].s = 1;              //:1;      /* descriptor type */
+    my_gdt[3].dpl = 0; //ring0    //:2;      /* descriptor privilege level */
+    my_gdt[3].p = 1;              //:1;      /* segment present flag */
+    my_gdt[3].limit_2 = 0x0;      //:4;      /* bits 16-19 of the segment limit */
+    my_gdt[3].avl = 1;            //:1;      /* available for fun and profit */
+    my_gdt[3].l = 0; // 32 bits   //:1;      /* longmode */
+    my_gdt[3].d = 1;              //:1;      /* default length, depend on seg type */
+    my_gdt[3].g = 0;              //:1;      /* granularity */
+    my_gdt[3].base_3 = 0x00;      //:8;      /* bits 24-31 of the base address */
+    print_gdt_content(my_gdtr);
+    
+
+    seg_sel_t my_es;
+    my_es.index = 3;
+    my_es.ti = 0;
+    my_es.rpl = 0;
+    set_es(my_es);
+    _memcpy8(dst, src, 64);
+
+    
+
+
+
 
 
 }
